@@ -1,6 +1,15 @@
 <?php
+// Exibe todos os erros (útil para debug)
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 header('Content-Type: application/json');
-require '../src/config/db.php';
+
+// --- Caminho Corrigido ---
+// Usa __DIR__ para obter o caminho absoluto do diretório atual (api)
+// e então volta um nível para encontrar src/config/db.php
+require __DIR__ . '/../src/config/db.php';
 
 try {
     // Vendas Totais (Valor)

@@ -13,19 +13,19 @@
 
     <aside class="w-20 bg-gray-800 text-white flex flex-col items-center py-6 space-y-8">
         <div class="text-2xl font-bold">
-            <i class="fas fa-store text-blue-400"></i>
+            <i class="fas fa-store text-blue-400" aria-label="Loja"></i>
         </div>
         <nav class="flex flex-col items-center space-y-6">
-            <a href="#" onclick="showView('dashboard')" class="sidebar-icon p-3 rounded-lg" title="Dashboard">
+            <a href="?page=dashboard" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Dashboard" aria-label="Dashboard">
                 <i class="fas fa-tachometer-alt"></i>
             </a>
-            <a href="#" onclick="showView('pdv')" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Ponto de Venda (PDV)">
+            <a href="?page=pdv" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Ponto de Venda (PDV)" aria-label="PDV">
                 <i class="fas fa-cash-register"></i>
             </a>
-            <a href="#" onclick="showView('products')" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Produtos">
+            <a href="?page=products" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Produtos" aria-label="Produtos">
                 <i class="fas fa-tshirt"></i>
             </a>
-            <a href="#" onclick="showView('reports')" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Relatórios">
+            <a href="?page=reports" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Relatórios" aria-label="Relatórios">
                 <i class="fas fa-chart-line"></i>
             </a>
         </nav>

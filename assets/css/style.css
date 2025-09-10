@@ -2,59 +2,81 @@ body {
     font-family: 'Inter', sans-serif;
     background-color: #f3f4f6;
 }
-.sidebar-icon { 
-    transition: all 0.2s ease-in-out; 
+
+.sidebar-icon {
+    transition: all 0.2s ease-in-out;
 }
-.sidebar-icon:hover { 
-    transform: scale(1.1); 
+
+.sidebar-icon:hover {
+    transform: scale(1.1);
 }
-.payment-option input:checked + label {
+
+.payment-option input:checked+label {
     border-color: #3b82f6;
     background-color: #eff6ff;
     color: #2563eb;
 }
+
 .modal-backdrop {
-    background-color: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     transition: opacity 0.3s ease;
 }
-.product-list::-webkit-scrollbar { 
-    width: 8px; 
+
+.product-list::-webkit-scrollbar {
+    width: 8px;
 }
-.product-list::-webkit-scrollbar-track { 
-    background: #f1f1f1; 
+
+.product-list::-webkit-scrollbar-track {
+    background: #f1f1f1;
 }
-.product-list::-webkit-scrollbar-thumb { 
-    background: #888; 
-    border-radius: 4px; 
+
+.product-list::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
 }
-.product-list::-webkit-scrollbar-thumb:hover { 
-    background: #555; 
+
+.product-list::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
-.filter-btn.active { 
-    background-color: #3b82f6; 
-    color: white; 
+
+/* Firefox scrollbar */
+.product-list {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
 }
-.view { 
-    display: block; 
+
+.filter-btn.active {
+    background-color: #3b82f6;
+    color: white;
 }
-.hidden { 
-    display: none; 
+
+.view {
+    display: block;
 }
+
+.hidden {
+    display: none;
+}
+
 .error-page {
     padding: 2rem;
     text-align: center;
     color: #6b7280;
 }
+
+.error-page h1,
 .error-page h2 {
     font-size: 1.5rem;
     font-weight: bold;
     margin-bottom: 1rem;
     color: #374151;
 }
+
 .error-page a {
     color: #3b82f6;
     text-decoration: underline;
 }
+
 .bg-gray-700 {
     background-color: #374151;
 }

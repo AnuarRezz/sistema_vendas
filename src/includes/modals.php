@@ -1,25 +1,25 @@
-<div id="alertModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+<div id="alertModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
     <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full transform transition-transform scale-95">
         <div id="modalIcon" class="mb-4"></div>
         <h3 id="modalTitle" class="text-xl font-bold text-gray-800 mb-2">Atenção</h3>
         <p id="modalMessage" class="text-gray-600 mb-6">Mensagem do modal.</p>
-        <button onclick="closeModal('alertModal')" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">OK</button>
+        <button type="button" onclick="closeModal('alertModal')" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">OK</button>
     </div>
 </div>
 
-<div id="confirmationModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+<div id="confirmationModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
     <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full transform transition-transform scale-95">
         <div id="confirmationModalIcon" class="mb-4"><i class="fas fa-question-circle text-5xl text-yellow-500"></i></div>
         <h3 id="confirmationModalTitle" class="text-xl font-bold text-gray-800 mb-2">Confirmar Ação</h3>
         <p id="confirmationModalMessage" class="text-gray-600 mb-6">Tem certeza que deseja continuar?</p>
         <div class="flex justify-center gap-4">
-            <button onclick="closeModal('confirmationModal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
-            <button id="confirmActionButton" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">Confirmar</button>
+            <button type="button" onclick="closeModal('confirmationModal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+            <button type="button" id="confirmActionButton" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">Confirmar</button>
         </div>
     </div>
 </div>
 
-<div id="productModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto">
+<div id="productModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto" role="dialog" aria-modal="true">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg transform transition-transform scale-95 my-auto">
         <h3 id="productModalTitle" class="text-2xl font-bold text-gray-800 mb-6">Cadastrar Produto</h3>
         <form id="productForm" onsubmit="saveProduct(event)">
@@ -62,7 +62,7 @@
     </div>
 </div>
 
-<div id="saleModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4">
+<div id="saleModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg transform transition-transform scale-95">
         <h3 id="saleModalTitle" class="text-2xl font-bold text-gray-800 mb-6">Editar Venda</h3>
         <form id="saleForm" onsubmit="saveSale(event)">
@@ -80,7 +80,7 @@
     </div>
 </div>
 
-<div id="paymentSplitModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto">
+<div id="paymentSplitModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto" role="dialog" aria-modal="true">
     <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-xl transform transition-transform scale-95 my-auto">
         <h3 class="text-2xl font-bold text-gray-800 mb-2">Finalizar Pagamento</h3>
         <div class="flex justify-between items-end mb-6 border-b pb-4">
@@ -109,7 +109,7 @@
                         <option value="Link de Pagamento">Link de Pagamento</option>
                     </select>
                 </div>
-                <button onclick="addPaymentPart()" class="bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors self-end h-[42px]">Adicionar Pagamento</button>
+                <button type="button" onclick="addPaymentPart()" class="bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors self-end h-[42px]">Adicionar Pagamento</button>
             </div>
         </div>
         <div class="mb-6">
@@ -120,7 +120,7 @@
         </div>
         <div class="flex justify-between gap-4 mt-8">
             <button type="button" onclick="cancelSplitPayment()" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar Venda</button>
-            <button id="confirmSplitSaleButton" onclick="confirmSplitSale()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Confirmar Venda</button>
+            <button type="button" id="confirmSplitSaleButton" onclick="confirmSplitSale()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Confirmar Venda</button>
         </div>
     </div>
 </div>

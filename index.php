@@ -1,15 +1,15 @@
-<?php 
+<?php
 // Inclui o header
 include 'src/includes/header.php';
 
 // Sistema de roteamento básico
-$page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
+$page = isset($_GET['page']) ? preg_replace('/[^a-z_]/', '', $_GET['page']) : 'dashboard';
 $allowed_pages = ['dashboard', 'pdv', 'products', 'reports'];
 
 // Verifica se a página solicitada é válida
 if (in_array($page, $allowed_pages)) {
     $view_file = 'src/views/' . $page . '.php';
-    
+
     // Verifica se o arquivo da view existe
     if (file_exists($view_file)) {
         include $view_file;
@@ -18,8 +18,8 @@ if (in_array($page, $allowed_pages)) {
         include 'src/views/error.php';
     }
 } else {
-    // Redireciona para dashboard se página não for válida
-    include 'src/views/dashboard.php';
+    // Página não permitida, mostra erro
+    include 'src/views/error.php';
 }
 
 // Inclui os modais

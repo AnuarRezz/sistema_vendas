@@ -3,7 +3,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2">
             <div class="bg-white p-6 rounded-xl shadow-md">
-                <input type="text" id="productSearch" onkeyup="renderProductList()" placeholder="Buscar produto por nome ou código..." class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="productSearch" onkeyup="renderProductList()" placeholder="Buscar produto por nome ou código..." class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500" aria-label="Buscar produto">
                 <div id="productList" class="product-list grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 h-[60vh] overflow-y-auto pr-2">
                 </div>
             </div>
@@ -19,7 +19,7 @@
                         <span class="text-lg font-medium text-gray-600">Total:</span>
                         <span id="cartTotal" class="text-2xl font-bold text-gray-800">R$ 0,00</span>
                     </div>
-                    <button onclick="openSplitPaymentModal()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg mt-5 hover:bg-blue-700 transition-colors">
+                    <button type="button" onclick="openSplitPaymentModal()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg mt-5 hover:bg-blue-700 transition-colors" aria-label="Realizar Pagamento">
                         <i class="fas fa-check-circle mr-2"></i>Realizar Pagamento
                     </button>
                 </div>

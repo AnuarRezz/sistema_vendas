@@ -35,4 +35,4 @@
         </nav>
     </aside>
 
-    <main class="flex-1 p-6 md:p-8 overflow-y-auto"></main>
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto">

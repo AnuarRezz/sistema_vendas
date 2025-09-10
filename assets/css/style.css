@@ -81,36 +81,18 @@ body {
     background-color: #374151;
 }
 
-/* ============================= */
-/* 🚀 Layout Tela Cheia          */
-/* ============================= */
+/*
+  =============================
+  🚀 Layout Tela Cheia (Correção)
+  =============================
+  A seção de CSS para "Layout Tela Cheia" que existia anteriormente foi removida
+  pois estava em conflito com as classes do Tailwind CSS utilizadas no arquivo `header.php`.
 
-/* Faz o body ocupar toda a tela */
-html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-}
+  O layout de tela cheia já é corretamente implementado no HTML pelas classes:
+  - `flex h-screen` na tag `<body>`
+  - `flex-1` na tag `<main>`
 
-/* Faz o conteúdo central ocupar o máximo possível */
-.main-container {
-    flex: 1; /* ocupa todo espaço disponível */
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-    width: 100%;
-}
-
-/* Para páginas que usam seções internas */
-.section-full {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    padding: 1rem; /* opcional, dá respiro */
-    box-sizing: border-box;
-}
+  Manter as regras CSS antigas forçava uma `flex-direction: column` no body,
+  o que quebrava o layout da sidebar ao lado do conteúdo principal. A remoção
+  deste código corrige o problema e permite que o Tailwind gerencie o layout.
+*/

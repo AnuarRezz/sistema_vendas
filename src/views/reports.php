@@ -56,7 +56,6 @@
             </div>
             <div>
                 <p class="text-gray-500">
-                    <!-- Use um ícone alternativo para Pix -->
                     <i class="fas fa-bolt text-blue-500 mr-1"></i> Pix
                 </p>
                 <p id="summaryPix" class="text-xl font-bold text-gray-800 mt-1">R$ 0,00</p>

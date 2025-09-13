@@ -146,6 +146,7 @@ function updateCart() {
                     <p class="text-gray-600">R$ ${parseFloat(item.price).toFixed(2).replace('.', ',')} x ${item.quantity}</p>
                 </div>
                 <div>
+                    <button onclick="changeQuantity(${index}, 1)" class="px-2 text-green-500"><i class="fas fa-plus-circle"></i></button>
                     <button onclick="changeQuantity(${index}, -1)" class="px-2 text-red-500"><i class="fas fa-minus-circle"></i></button>
                     <button onclick="removeFromCart(${index})" class="px-2 text-red-700"><i class="fas fa-trash"></i></button>
                 </div>
@@ -209,6 +210,7 @@ function updateSplitPaymentModalUI() {
                 <div class="flex justify-between items-center bg-white p-2 rounded shadow-sm text-sm">
                     <span>${index + 1}. ${p.method}</span>
                     <span class="font-medium">R$ ${p.amount.toFixed(2).replace('.', ',')}</span>
+                     <button onclick="removePaymentPart(${index})" class="text-red-500"><i class="fas fa-times"></i></button>
                 </div>
             `;
         });
@@ -229,7 +231,7 @@ function addPaymentPart() {
     }
 
     if (amount > currentSaleRemaining + 0.01) {
-        showAlert(`O valor não pode ser maior que o restante (R$ ${currentSaleRemaining.toFixed(2)}).`, 'warning');
+        showAlert(`O valor não pode ser maior que o restante (R$ ${currentSaleRemaining.toFixed(2).replace('.',',')}).`, 'warning');
         return;
     }
 
@@ -238,6 +240,11 @@ function addPaymentPart() {
         amount: amount
     });
 
+    updateSplitPaymentModalUI();
+}
+
+function removePaymentPart(index) {
+    currentSalePayments.splice(index, 1);
     updateSplitPaymentModalUI();
 }
 
@@ -288,8 +295,8 @@ async function openProductModal(productId = null) {
     document.getElementById('productId').value = '';
 
     if(productId) {
-        const products = await fetchData('api/products.php');
-        const product = products.find(p => p.id === productId);
+        // Busca o produto específico para garantir dados atualizados
+        const product = await fetchData(`api/products.php?id=${productId}`);
         if (product) {
             title.innerText = 'Editar Produto';
             document.getElementById('productId').value = product.id;
@@ -334,7 +341,9 @@ async function saveProduct(event) {
         showAlert(`Produto ${id ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
         closeModal('productModal');
         renderProductTable();
-        renderProductList();
+        if(document.getElementById('pdv').classList.contains('view')) {
+           renderProductList();
+        }
     }
 }
 
@@ -344,7 +353,9 @@ function deleteProduct(productId) {
          if (result && result.status === 'success') {
              showAlert('Produto excluído com sucesso!', 'success');
              renderProductTable();
-             renderProductList();
+              if(document.getElementById('pdv').classList.contains('view')) {
+                renderProductList();
+             }
          }
     });
 }
@@ -355,7 +366,7 @@ function deleteProduct(productId) {
 async function updateDashboard() {
     const data = await fetchData('api/dashboard.php');
     if (data) {
-        document.getElementById('totalSalesValue').innerText = `R$ ${data.totalSalesValue.toFixed(2).replace('.', ',')}`;
+        document.getElementById('totalSalesValue').innerText = `R$ ${parseFloat(data.totalSalesValue).toFixed(2).replace('.', ',')}`;
         document.getElementById('totalSalesCount').innerText = data.totalSalesCount;
         document.getElementById('totalStock').innerText = data.totalStock;
     }
@@ -368,7 +379,10 @@ async function renderProductTable() {
     if (!tableBody) return;
 
     const products = await fetchData('api/products.php');
-    if (!products) return;
+    if (!products) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Nenhum produto encontrado.</td></tr>`;
+        return;
+    }
     
     tableBody.innerHTML = '';
     products.forEach(p => {
@@ -391,41 +405,187 @@ async function renderProductTable() {
     });
 }
 
-// A função de relatórios precisaria de uma API mais complexa para filtros.
-// Esta é uma versão simplificada.
+
 async function renderSalesReport(filterType) {
     const reportBody = document.getElementById('salesReportBody');
     if (!reportBody) return;
 
-    // A lógica de filtro do lado do servidor precisaria ser implementada na API
-    const sales = await fetchData('api/sales.php'); 
-    if (!sales) {
-        reportBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Nenhuma venda encontrada.</td></tr>`;
+    currentFilter = filterType;
+    let url = 'api/sales.php?';
+    
+    // Constrói a URL com base nos filtros
+    url += `filter=${filterType}`;
+    if (filterType === 'custom_day') {
+        url += `&date=${document.getElementById('daily-report-date').value}`;
+    }
+    if (filterType === 'custom_month') {
+        url += `&date=${document.getElementById('monthly-report-date').value}`;
+    }
+    const paymentMethod = document.getElementById('payment-filter').value;
+    if (paymentMethod) {
+        url += `&payment_method=${paymentMethod}`;
+    }
+    
+    updateFilterButtons(filterType);
+
+    const data = await fetchData(url); 
+    if (!data || !data.sales) {
+        reportBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-500">Nenhuma venda encontrada para este filtro.</td></tr>`;
+        currentFilteredSales = [];
+        updateReportSummary({ sales: [], summary: { totalValue: 0, totalCount: 0, byMethod: {} } });
         return;
     }
     
-    currentFilteredSales = sales; // Para exportação
+    currentFilteredSales = data.sales;
     reportBody.innerHTML = '';
     
-    sales.forEach(sale => {
+    data.sales.forEach(sale => {
+        // Detalhes dos itens (simplificado)
+        const itemsSummary = sale.items.map(item => `${item.quantity}x ${item.name}`).join('<br>');
+
         reportBody.innerHTML += `
             <tr class="border-b hover:bg-gray-50 align-top">
                 <td class="p-3 font-medium">#${sale.id}</td>
                 <td class="p-3">${new Date(sale.sale_date).toLocaleString('pt-BR')}</td>
-                <td class="p-3 text-xs">--</td> <td class="p-3 font-semibold">R$ ${parseFloat(sale.total).toFixed(2).replace('.', ',')}</td>
-                <td class="p-3 text-xs font-medium">${sale.payment_methods}</td>
+                <td class="p-3 text-xs">${itemsSummary}</td>
+                <td class="p-3 font-semibold">R$ ${parseFloat(sale.total).toFixed(2).replace('.', ',')}</td>
+                <td class="p-3 text-xs font-medium">${sale.payment_methods ? sale.payment_methods.replace(/,/g, ',<br>') : 'N/A'}</td>
                 <td class="p-3 text-center">
-                    <button class="text-gray-400 p-2 cursor-not-allowed" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button class="text-gray-400 p-2 cursor-not-allowed" title="Excluir"><i class="fas fa-trash"></i></button>
+                    <button onclick="openSaleModal(${sale.id})" class="text-blue-500 hover:text-blue-700 p-2" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button onclick="deleteSale(${sale.id})" class="text-red-500 hover:text-red-700 p-2" title="Excluir"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>
         `;
     });
+    
+    updateReportSummary(data);
+}
+
+function updateReportSummary(data) {
+    const summary = data.summary;
+    document.getElementById('summaryTotalValue').innerText = `R$ ${parseFloat(summary.totalValue).toFixed(2).replace('.', ',')}`;
+    document.getElementById('summaryTotalCount').innerText = summary.totalCount;
+
+    // Totais por método de pagamento
+    document.getElementById('summaryDinheiro').innerText = `R$ ${parseFloat(summary.byMethod['Dinheiro'] || 0).toFixed(2).replace('.', ',')}`;
+    document.getElementById('summaryPix').innerText = `R$ ${parseFloat(summary.byMethod['Pix'] || 0).toFixed(2).replace('.', ',')}`;
+    document.getElementById('summaryCartao').innerText = `R$ ${parseFloat(summary.byMethod['Cartão'] || 0).toFixed(2).replace('.', ',')}`;
+    document.getElementById('summaryLink').innerText = `R$ ${parseFloat(summary.byMethod['Link de Pagamento'] || 0).toFixed(2).replace('.', ',')}`;
+}
+
+function updateFilterButtons(activeFilter) {
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeButton = document.querySelector(`.filter-btn[onclick="renderSalesReport('${activeFilter}')"]`);
+    if(activeButton) {
+        activeButton.classList.add('active');
+    }
+}
+
+function clearFilters() {
+    document.getElementById('daily-report-date').value = '';
+    document.getElementById('monthly-report-date').value = '';
+    document.getElementById('payment-filter').value = '';
+    renderSalesReport('all');
+}
+
+// --- GESTÃO DE VENDAS (NOVO) ---
+
+async function openSaleModal(saleId) {
+    const modal = document.getElementById('saleModal');
+    const form = document.getElementById('saleForm');
+    form.reset();
+
+    const sale = await fetchData(`api/sales.php?id=${saleId}`);
+    if (sale) {
+        document.getElementById('saleId').value = sale.id;
+        // Formata a data para o input datetime-local (YYYY-MM-DDTHH:mm)
+        const date = new Date(sale.sale_date);
+        const formattedDate = date.getFullYear() + '-' + 
+                              ('0' + (date.getMonth() + 1)).slice(-2) + '-' + 
+                              ('0' + date.getDate()).slice(-2) + 'T' + 
+                              ('0' + date.getHours()).slice(-2) + ':' + 
+                              ('0' + date.getMinutes()).slice(-2);
+        document.getElementById('saleDate').value = formattedDate;
+        modal.classList.remove('hidden');
+    }
+}
+
+async function saveSale(event) {
+    event.preventDefault();
+    const saleId = document.getElementById('saleId').value;
+    const saleDate = document.getElementById('saleDate').value;
+
+    const saleData = {
+        id: parseInt(saleId),
+        sale_date: saleDate
+    };
+
+    const result = await postData('api/sales.php', saleData, 'PUT');
+
+    if (result && result.status === 'success') {
+        showAlert('Data da venda atualizada com sucesso!', 'success');
+        closeModal('saleModal');
+        renderSalesReport(currentFilter); // Recarrega o relatório
+    }
+}
+
+function deleteSale(saleId) {
+    showConfirmationModal('Tem certeza que deseja excluir esta venda? Esta ação é irreversível e o estoque dos produtos será devolvido.', async () => {
+        const result = await postData(`api/sales.php?id=${saleId}`, {}, 'DELETE');
+        if (result && result.status === 'success') {
+            showAlert('Venda excluída com sucesso!', 'success');
+            renderSalesReport(currentFilter); // Recarrega o relatório
+        }
+    });
+}
+
+
+// --- EXPORTAÇÃO ---
+function exportReport(format) {
+    if (currentFilteredSales.length === 0) {
+        showAlert('Não há dados para exportar.', 'warning');
+        return;
+    }
+
+    const headers = ["ID Venda", "Data", "Itens", "Total (R$)", "Pagamento"];
+    const data = currentFilteredSales.map(sale => ({
+        id: sale.id,
+        sale_date: new Date(sale.sale_date).toLocaleString('pt-BR'),
+        items: sale.items.map(item => `${item.quantity}x ${item.name}`).join(', '),
+        total: parseFloat(sale.total).toFixed(2),
+        payment_methods: sale.payment_methods
+    }));
+
+    if (format === 'pdf') {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.text("Relatório de Vendas", 14, 16);
+        doc.autoTable({
+            head: [headers],
+            body: data.map(Object.values),
+            startY: 20,
+        });
+        doc.save('relatorio_vendas.pdf');
+
+    } else if (format === 'excel') {
+        const worksheet = XLSX.utils.json_to_sheet(data);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Vendas");
+        XLSX.utils.sheet_add_aoa(worksheet, [headers], { origin: "A1" }); // Adiciona cabeçalhos
+        
+        // Ajusta a largura das colunas
+        const max_width = data.reduce((w, r) => Math.max(w, r.items.length), 10);
+        worksheet["!cols"] = [ { wch: 10 }, { wch: 20 }, { wch: max_width }, { wch: 15 }, { wch: 25 } ];
+
+        XLSX.writeFile(workbook, "relatorio_vendas.xlsx");
+    }
 }
 
 
 // --- FUNÇÕES UTILITÁRIAS (MODAIS, ETC.) ---
-// (Estas funções permanecem quase inalteradas)
 
 function showAlert(message, type = 'info') {
     const modal = document.getElementById('alertModal');

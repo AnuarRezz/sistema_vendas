@@ -366,6 +366,11 @@ function deleteProduct(productId) {
 async function updateDashboard() {
     const data = await fetchData('api/dashboard.php');
     if (data) {
+        // IDs dos novos cards
+        document.getElementById('dailySalesValue').innerText = `R$ ${parseFloat(data.dailySalesValue).toFixed(2).replace('.', ',')}`;
+        document.getElementById('monthlySalesValue').innerText = `R$ ${parseFloat(data.monthlySalesValue).toFixed(2).replace('.', ',')}`;
+        
+        // IDs existentes
         document.getElementById('totalSalesValue').innerText = `R$ ${parseFloat(data.totalSalesValue).toFixed(2).replace('.', ',')}`;
         document.getElementById('totalSalesCount').innerText = data.totalSalesCount;
         document.getElementById('totalStock').innerText = data.totalStock;

@@ -12,19 +12,29 @@ header('Content-Type: application/json');
 require __DIR__ . '/../src/config/db.php';
 
 try {
-    // Vendas Totais (Valor)
+    // Vendas do Dia
+    $stmt = $pdo->query("SELECT SUM(total) as dailySalesValue FROM sales WHERE DATE(sale_date) = CURDATE()");
+    $dailySalesValue = $stmt->fetchColumn() ?: 0;
+
+    // Vendas do Mês
+    $stmt = $pdo->query("SELECT SUM(total) as monthlySalesValue FROM sales WHERE YEAR(sale_date) = YEAR(CURDATE()) AND MONTH(sale_date) = MONTH(CURDATE())");
+    $monthlySalesValue = $stmt->fetchColumn() ?: 0;
+
+    // Vendas Totais (Valor) -
     $stmt = $pdo->query("SELECT SUM(total) as totalSalesValue FROM sales");
     $totalSalesValue = $stmt->fetchColumn() ?: 0;
 
-    // Vendas Realizadas (Contagem)
+    // Vendas Realizadas (Contagem) -
     $stmt = $pdo->query("SELECT COUNT(id) as totalSalesCount FROM sales");
     $totalSalesCount = $stmt->fetchColumn() ?: 0;
 
-    // Itens em Estoque
+    // Itens em Estoque -
     $stmt = $pdo->query("SELECT SUM(stock) as totalStock FROM products");
     $totalStock = $stmt->fetchColumn() ?: 0;
 
     echo json_encode([
+        'dailySalesValue' => (float)$dailySalesValue,
+        'monthlySalesValue' => (float)$monthlySalesValue,
         'totalSalesValue' => (float)$totalSalesValue,
         'totalSalesCount' => (int)$totalSalesCount,
         'totalStock' => (int)$totalStock

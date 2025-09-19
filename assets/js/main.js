@@ -25,7 +25,7 @@ async function fetchData(url) {
     }
 }
 
-// Envia dados para a API
+// Envia dados para a API (usado para JSON)
 async function postData(url, data, method = 'POST') {
     try {
         const response = await fetch(url, {
@@ -75,7 +75,10 @@ async function renderProductList() {
     if (!productList) return;
 
     const products = await fetchData('api/products.php');
-    if (!products) return;
+    if (!products) {
+        productList.innerHTML = `<p class="col-span-full text-center text-gray-500">Nenhum produto encontrado.</p>`;
+        return;
+    }
 
     const searchTerm = document.getElementById('productSearch').value.toLowerCase();
     productList.innerHTML = '';
@@ -91,9 +94,12 @@ async function renderProductList() {
     }
 
     filteredProducts.forEach(product => {
+        // Garante que o caminho da imagem esteja correto
+        const imageUrl = product.image || 'https://placehold.co/300x300/e0e0e0/777?text=Produto';
+        
         productList.innerHTML += `
             <div onclick='addToCart(${JSON.stringify(product)})' class="border rounded-lg p-3 text-center cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all">
-                <img src="${product.image}" alt="${product.name}" class="w-full h-24 object-cover rounded-md mb-2">
+                <img src="${imageUrl}" alt="${product.name}" class="w-full h-24 object-cover rounded-md mb-2">
                 <p class="font-semibold text-sm text-gray-700">${product.name}</p>
                 <p class="text-xs text-gray-500">${product.size} / ${product.color}</p>
                 <p class="font-bold text-blue-600 mt-1">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
@@ -255,7 +261,7 @@ async function confirmSplitSale() {
         payments: currentSalePayments
     };
 
-    const result = await postData('api/sales.php', saleData);
+    const result = await postData('api/sales.php', saveSale);
 
     if (result && result.status === 'success') {
         cart = [];
@@ -282,7 +288,16 @@ function previewImage(event) {
     if(event.target.files[0]){
         reader.readAsDataURL(event.target.files[0]);
     } else {
-        imagePreview.src = 'https://placehold.co/100x100/e0e0e0/777?text=Imagem';
+        // Se o arquivo for removido, volte para a imagem existente (se houver) ou placeholder
+        const existingImage = document.getElementById('existingImage').value;
+        if (existingImage && !existingImage.includes('placehold.co')) {
+             imagePreview.src = 'api/uploads/' + existingImage;
+        } else if (existingImage) {
+             imagePreview.src = existingImage; // Placeholder URL
+        }
+         else {
+             imagePreview.src = 'https://placehold.co/100x100/e0e0e0/777?text=Imagem';
+        }
     }
 }
 
@@ -293,6 +308,7 @@ async function openProductModal(productId = null) {
     const imagePreview = document.getElementById('imagePreview');
     form.reset();
     document.getElementById('productId').value = '';
+    document.getElementById('existingImage').value = ''; // Limpa o campo de imagem existente
 
     if(productId) {
         // Busca o produto específico para garantir dados atualizados
@@ -305,7 +321,20 @@ async function openProductModal(productId = null) {
             document.getElementById('productColor').value = product.color;
             document.getElementById('productPrice').value = product.price;
             document.getElementById('productStock').value = product.stock;
-            imagePreview.src = product.image || 'https://placehold.co/100x100/e0e0e0/777?text=Imagem';
+            
+            // Define a imagem atual
+            const imageUrl = product.image || 'https://placehold.co/100x100/e0e0e0/777?text=Imagem';
+            imagePreview.src = imageUrl;
+            
+            // Armazena o caminho da imagem existente (se não for placeholder)
+            if (imageUrl && !imageUrl.includes('placehold.co')) {
+                 // Salva apenas o *nome do arquivo* (ex: 65f...-img.jpg)
+                 // O PHP em GET já adiciona 'api/uploads/', então precisamos remover
+                 document.getElementById('existingImage').value = imageUrl.split('/').pop();
+            } else if (imageUrl) {
+                 // Salva a URL do placeholder
+                 document.getElementById('existingImage').value = imageUrl;
+            }
         }
     } else {
         title.innerText = 'Cadastrar Produto';
@@ -317,33 +346,57 @@ async function openProductModal(productId = null) {
 
 async function saveProduct(event) {
     event.preventDefault();
-    const id = document.getElementById('productId').value;
-    const name = document.getElementById('productName').value;
     
-    // Simples placeholder para a imagem
-    const image = id 
-        ? document.getElementById('imagePreview').src 
-        : `https://placehold.co/300x300/cccccc/333333?text=${name.replace(/\s/g,'+')}`;
+    // 1. Criar FormData para enviar arquivos
+    const formData = new FormData();
+    const id = document.getElementById('productId').value;
+    
+    // 2. Obter o arquivo de imagem selecionado
+    const imageFile = document.getElementById('productImage').files[0];
+    if (imageFile) {
+        formData.append('productImage', imageFile);
+    }
 
-    const productData = {
-        id: id ? parseInt(id) : null,
-        name: name,
-        size: document.getElementById('productSize').value,
-        color: document.getElementById('productColor').value,
-        price: parseFloat(document.getElementById('productPrice').value),
-        stock: parseInt(document.getElementById('productStock').value),
-        image: image // Em um sistema real, aqui seria um upload de arquivo
-    };
+    // 3. Adicionar os outros campos do formulário
+    formData.append('id', id);
+    formData.append('name', document.getElementById('productName').value);
+    formData.append('size', document.getElementById('productSize').value);
+    formData.append('color', document.getElementById('productColor').value);
+    formData.append('price', parseFloat(document.getElementById('productPrice').value));
+    formData.append('stock', parseInt(document.getElementById('productStock').value));
+    formData.append('existingImage', document.getElementById('existingImage').value); // Envia o nome da imagem antiga
 
-    const result = await postData('api/products.php', productData);
+    // 4. Enviar FormData via Fetch
+    // NÃO usamos postData() porque ele envia JSON, não FormData
+    try {
+        const response = await fetch('api/products.php', {
+            method: 'POST',
+            body: formData 
+            // Não defina 'Content-Type', o navegador faz isso automaticamente para FormData
+        });
 
-    if (result && result.status === 'success') {
-        showAlert(`Produto ${id ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
-        closeModal('productModal');
-        renderProductTable();
-        if(document.getElementById('pdv').classList.contains('view')) {
-           renderProductList();
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
         }
+
+        const result = await response.json();
+
+        if (result && result.status === 'success') {
+            showAlert(`Produto ${id ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
+            closeModal('productModal');
+            renderProductTable();
+            
+            // ********** BLOCO CORRIGIDO (Linhas 375-378) **********
+            // Verifica se a view PDV existe ANTES de checar a classList
+            const pdvView = document.getElementById('pdv');
+            if(pdvView && pdvView.classList.contains('hidden') === false) {
+               renderProductList();
+            }
+        }
+    } catch (error) {
+        console.error("Falha ao salvar produto:", error);
+        showAlert(`Erro ao salvar produto: ${error.message}`, 'error');
     }
 }
 
@@ -353,7 +406,10 @@ function deleteProduct(productId) {
          if (result && result.status === 'success') {
              showAlert('Produto excluído com sucesso!', 'success');
              renderProductTable();
-              if(document.getElementById('pdv').classList.contains('view')) {
+              
+              // Adicionada a mesma correção aqui por segurança
+              const pdvView = document.getElementById('pdv');
+              if(pdvView && pdvView.classList.contains('hidden') === false) {
                 renderProductList();
              }
          }
@@ -391,10 +447,13 @@ async function renderProductTable() {
     
     tableBody.innerHTML = '';
     products.forEach(p => {
+        // Garante que o caminho da imagem esteja correto
+        const imageUrl = p.image || 'https://placehold.co/100x100/e0e0e0/777?text=Produto';
+        
         tableBody.innerHTML += `
             <tr class="border-b hover:bg-gray-50 align-middle">
                 <td class="p-3 flex items-center gap-3">
-                    <img src="${p.image}" alt="${p.name}" class="w-12 h-12 object-cover rounded-md border">
+                    <img src="${imageUrl}" alt="${p.name}" class="w-12 h-12 object-cover rounded-md border">
                     <span class="font-medium">${p.name}</span>
                 </td>
                 <td class="p-3">${p.size}</td>
@@ -507,11 +566,10 @@ async function openSaleModal(saleId) {
         document.getElementById('saleId').value = sale.id;
         // Formata a data para o input datetime-local (YYYY-MM-DDTHH:mm)
         const date = new Date(sale.sale_date);
-        const formattedDate = date.getFullYear() + '-' + 
-                              ('0' + (date.getMonth() + 1)).slice(-2) + '-' + 
-                              ('0' + date.getDate()).slice(-2) + 'T' + 
-                              ('0' + date.getHours()).slice(-2) + ':' + 
-                              ('0' + date.getMinutes()).slice(-2);
+        // Ajusta para o fuso horário local antes de formatar
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        const formattedDate = date.toISOString().slice(0, 16);
+                              
         document.getElementById('saleDate').value = formattedDate;
         modal.classList.remove('hidden');
     }

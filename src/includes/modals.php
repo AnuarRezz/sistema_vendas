@@ -24,6 +24,8 @@
         <h3 id="productModalTitle" class="text-2xl font-bold text-gray-800 mb-6">Cadastrar Produto</h3>
         <form id="productForm" onsubmit="saveProduct(event)">
             <input type="hidden" id="productId">
+            <input type="hidden" id="existingImage">
+            
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="productName" class="block mb-1 font-medium">Nome</label>

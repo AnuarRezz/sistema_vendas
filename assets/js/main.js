@@ -254,6 +254,7 @@ function removePaymentPart(index) {
     updateSplitPaymentModalUI();
 }
 
+// ********** FUNÇÃO CORRIGIDA **********
 async function confirmSplitSale() {
     const saleData = {
         items: cart,
@@ -261,7 +262,8 @@ async function confirmSplitSale() {
         payments: currentSalePayments
     };
 
-    const result = await postData('api/sales.php', saveSale);
+    // Linha 273: Corrigido de 'saveSale' para 'saleData'
+    const result = await postData('api/sales.php', saleData);
 
     if (result && result.status === 'success') {
         cart = [];
@@ -387,7 +389,6 @@ async function saveProduct(event) {
             closeModal('productModal');
             renderProductTable();
             
-            // ********** BLOCO CORRIGIDO (Linhas 375-378) **********
             // Verifica se a view PDV existe ANTES de checar a classList
             const pdvView = document.getElementById('pdv');
             if(pdvView && pdvView.classList.contains('hidden') === false) {

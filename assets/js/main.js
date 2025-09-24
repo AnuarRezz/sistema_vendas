@@ -431,6 +431,27 @@ async function updateDashboard() {
         document.getElementById('totalSalesValue').innerText = `R$ ${parseFloat(data.totalSalesValue).toFixed(2).replace('.', ',')}`;
         document.getElementById('totalSalesCount').innerText = data.totalSalesCount;
         document.getElementById('totalStock').innerText = data.totalStock;
+
+        // --- NOVO: Renderiza as vendas mensais ---
+        const monthlySalesContainer = document.getElementById('monthlySales');
+        if (monthlySalesContainer) {
+            monthlySalesContainer.innerHTML = ''; // Limpa o container
+
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            
+            for (let i = 1; i <= 12; i++) {
+                const monthName = monthNames[i - 1];
+                const salesTotal = data.salesByMonth[i] || 0;
+                
+                monthlySalesContainer.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl shadow-md">
+                        <p class="text-gray-500 font-semibold">${monthName}</p>
+                        <p class="text-xl font-bold text-gray-800 mt-2">R$ ${salesTotal.toFixed(2).replace('.', ',')}</p>
+                    </div>
+                `;
+            }
+        }
+        // --- FIM DO NOVO CÓDIGO ---
     }
 }
 

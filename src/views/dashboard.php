@@ -52,4 +52,10 @@
             </div>
         </section>
     </div>
+
+    <div class="mt-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">Vendas Mensais do Ano</h2>
+        <div id="monthlySales" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            </div>
+    </div>
 </div>

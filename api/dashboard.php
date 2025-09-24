@@ -31,13 +31,34 @@ try {
     // Itens em Estoque -
     $stmt = $pdo->query("SELECT SUM(stock) as totalStock FROM products");
     $totalStock = $stmt->fetchColumn() ?: 0;
+    
+    // --- NOVO: Vendas por Mês no Ano ---
+    $monthlySalesQuery = "
+        SELECT 
+            MONTH(sale_date) as month, 
+            SUM(total) as total 
+        FROM sales 
+        WHERE YEAR(sale_date) = YEAR(CURDATE()) 
+        GROUP BY MONTH(sale_date) 
+        ORDER BY MONTH(sale_date) ASC
+    ";
+    $stmt = $pdo->query($monthlySalesQuery);
+    $salesByMonth = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Formata o array para ser mais fácil de usar no front-end (garante que todos os 12 meses existam)
+    $formattedSalesByMonth = array_fill(1, 12, 0);
+    foreach ($salesByMonth as $row) {
+        $formattedSalesByMonth[(int)$row['month']] = (float)$row['total'];
+    }
+
 
     echo json_encode([
         'dailySalesValue' => (float)$dailySalesValue,
         'monthlySalesValue' => (float)$monthlySalesValue,
         'totalSalesValue' => (float)$totalSalesValue,
         'totalSalesCount' => (int)$totalSalesCount,
-        'totalStock' => (int)$totalStock
+        'totalStock' => (int)$totalStock,
+        'salesByMonth' => $formattedSalesByMonth // Novo dado adicionado
     ]);
 
 } catch (PDOException $e) {

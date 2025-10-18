@@ -11,39 +11,39 @@ let currentFilter = 'all';
 // --- FUNÇÕES DE API ---
 
 // Busca dados da API
-async function fetchData(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Falha ao buscar dados:", error);
-        showAlert(`Erro ao carregar dados da API: ${error.message}`, 'error');
-        return null;
-    }
-}
+// async function fetchData(url) {
+//     try {
+//         const response = await fetch(url);
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+//         return await response.json();
+//     } catch (error) {
+//         console.error("Falha ao buscar dados:", error);
+//         showAlert(`Erro ao carregar dados da API: ${error.message}`, 'error');
+//         return null;
+//     }
+// }
 
 // Envia dados para a API (usado para JSON)
-async function postData(url, data, method = 'POST') {
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Falha ao enviar dados:", error);
-        showAlert(`Erro ao salvar dados: ${error.message}`, 'error');
-        return null;
-    }
-}
+// async function postData(url, data, method = 'POST') {
+//     try {
+//         const response = await fetch(url, {
+//             method: method,
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify(data)
+//         });
+//         if (!response.ok) {
+//             const errorData = await response.json();
+//             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+//         }
+//         return await response.json();
+//     } catch (error) {
+//         console.error("Falha ao enviar dados:", error);
+//         showAlert(`Erro ao salvar dados: ${error.message}`, 'error');
+//         return null;
+//     }
+// }
 
 
 // --- NAVEGAÇÃO E EXIBIÇÃO ---

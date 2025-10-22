@@ -1,4 +1,12 @@
 <?php
+session_start(); // Inicia a sessão
+
+// Se o usuário NÃO estiver logado, redireciona para a tela de login
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit; // Garante que o script pare aqui
+}
+
 // Inclui o header
 include 'src/includes/header.php';
 

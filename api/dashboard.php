@@ -1,4 +1,14 @@
 <?php
+// ADIÇÃO DO BLOCO DE SESSÃO NO TOPO
+session_start();
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header('Content-Type: application/json');
+    http_response_code(403); // Forbidden
+    echo json_encode(['error' => 'Acesso não autorizado.']);
+    exit;
+}
+// FIM DO BLOCO
+
 // Exibe todos os erros (útil para debug)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);

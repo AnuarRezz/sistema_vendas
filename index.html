@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Vendas - Loja de Roupas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-storage.js"></script>
+
+    <script>
+        // ###############################################################
+        // COLE SUAS CREDENCIAIS DO FIREBASE AQUI
+        // ###############################################################
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Inicializa o Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const auth = firebase.getAuth(app);
+        const db = firebase.getFirestore(app);
+        const storage = firebase.getStorage(app);
+
+        // Importa as funções que usaremos
+        const { collection, getDocs, getDoc, addDoc, doc, updateDoc, deleteDoc, query, where, orderBy, runTransaction, Timestamp } = firebase.firestore;
+        const { ref, uploadBytes, getDownloadURL, deleteObject } = firebase.storage;
+        const { onAuthStateChanged, signOut } = firebase.auth;
+
+        // --- PROTEÇÃO DE ROTA (Substitui o session_start() do PHP) ---
+        onAuthStateChanged(auth, (user) => {
+            if (!user) {
+                // Usuário não está logado, redireciona para o login
+                window.location.href = 'login.html';
+            }
+        });
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="w-20 bg-gray-800 text-white flex flex-col items-center py-6 space-y-8">
+        <div class="text-2xl font-bold">
+            <i class="fas fa-store text-blue-400" aria-label="Loja"></i>
+        </div>
+        
+        <nav class="flex flex-col items-center space-y-6 flex-1">
+            <a href="?page=dashboard" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Dashboard" aria-label="Dashboard">
+                <i class="fas fa-tachometer-alt"></i>
+            </a>
+            <a href="?page=pdv" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Ponto de Venda (PDV)" aria-label="PDV">
+                <i class="fas fa-cash-register"></i>
+            </a>
+            <a href="?page=products" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Produtos" aria-label="Produtos">
+                <i class="fas fa-tshirt"></i>
+            </a>
+            <a href="?page=reports" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Relatórios" aria-label="Relatórios">
+                <i class="fas fa-chart-line"></i>
+            </a>
+            
+            <a href="#" id="logoutButton" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700 mt-auto" title="Sair" aria-label="Sair">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </nav>
+    </aside>
+
+    <main class="flex-1 p-6 md:p-8 overflow-y-auto">
+        
+        <div id="dashboard" class="view">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Dashboard</h1>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> 
+                
+                <section class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                    <div class="bg-purple-100 p-4 rounded-full">
+                        <i class="fas fa-calendar-day text-purple-500 text-2xl" aria-label="Vendas do Dia"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Vendas do Dia</p>
+                        <p id="dailySalesValue" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                    </div>
+                </section>
+
+                <section class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                    <div class="bg-pink-100 p-4 rounded-full">
+                        <i class="fas fa-calendar-alt text-pink-500 text-2xl" aria-label="Vendas do Mês"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Vendas do Mês</p>
+                        <p id="monthlySalesValue" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                    </div>
+                </section>
+
+                <section class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                    <div class="bg-blue-100 p-4 rounded-full">
+                        <i class="fas fa-dollar-sign text-blue-500 text-2xl" aria-label="Vendas Totais"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Vendas Totais</p>
+                        <p id="totalSalesValue" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                    </div>
+                </section>
+                
+                <section class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                    <div class="bg-green-100 p-4 rounded-full">
+                        <i class="fas fa-shopping-cart text-green-500 text-2xl" aria-label="Vendas Realizadas"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Vendas Realizadas</p>
+                        <p id="totalSalesCount" class="text-2xl font-bold text-gray-800">0</p>
+                    </div>
+                </section>
+                
+                <section class="bg-white p-6 rounded-xl shadow-md flex items-center space-x-4">
+                    <div class="bg-yellow-100 p-4 rounded-full">
+                        <i class="fas fa-box-open text-yellow-500 text-2xl" aria-label="Itens em Estoque"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">Itens em Estoque</p>
+                        <p id="totalStock" class="text-2xl font-bold text-gray-800">0</p>
+                    </div>
+                </section>
+            </div>
+
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Vendas Mensais do Ano</h2>
+                <div id="monthlySales" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    </div>
+            </div>
+        </div>
+        <div id="pdv" class="view hidden">
+            <h1 class="text-3xl font-bold text-gray-800 mb-6">Ponto de Venda (PDV)</h1>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <input type="text" id="productSearch" onkeyup="renderProductList()" placeholder="Buscar produto por nome ou código..." class="w-full p-3 border rounded-lg mb-4 focus:ring-2 focus:ring-blue-500" aria-label="Buscar produto">
+                        <div id="productList" class="product-list grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 h-[60vh] overflow-y-auto pr-2">
+                            </div>
+                    </div>
+                </div>
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-xl shadow-md sticky top-6">
+                        <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2">Carrinho</h2>
+                        <div id="cartItems" class="mb-4 h-64 overflow-y-auto">
+                           <p class="text-gray-500">Nenhum item no carrinho.</p>
+                        </div>
+                        <div class="border-t pt-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-lg font-medium text-gray-600">Total:</span>
+                                <span id="cartTotal" class="text-2xl font-bold text-gray-800">R$ 0,00</span>
+                            </div>
+                            <button type="button" onclick="openSplitPaymentModal()" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg mt-5 hover:bg-blue-700 transition-colors" aria-label="Realizar Pagamento">
+                                <i class="fas fa-check-circle mr-2"></i>Realizar Pagamento
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="products" class="view hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-800">Gestão de Produtos</h1>
+                <button type="button" onclick="openProductModal()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus-circle mr-2"></i>Cadastrar Novo Produto
+                </button>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
+                <table class="w-full text-left min-w-[700px]">
+                    <thead>
+                        <tr class="border-b">
+                            <th scope="col" class="p-3">Produto</th>
+                            <th scope="col" class="p-3">Tamanho</th>
+                            <th scope="col" class="p-3">Cor</th>
+                            <th scope="col" class="p-3">Preço</th>
+                            <th scope="col" class="p-3">Estoque</th>
+                            <th scope="col" class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="productTableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="reports" class="view hidden">
+            <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+                <h1 class="text-3xl font-bold text-gray-800">Relatório de Vendas</h1>
+                <div class="flex gap-3">
+                     <button type="button" onclick="exportReport('pdf')" class="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors text-sm">
+                         <i class="fas fa-file-pdf mr-2"></i>Exportar PDF
+                     </button>
+                     <button type="button" onclick="exportReport('excel')" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors text-sm">
+                         <i class="fas fa-file-excel mr-2"></i>Exportar Excel
+                     </button>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-wrap items-center gap-4 text-sm md:text-base">
+                <div>
+                    <span class="font-semibold mr-3">Filtros rápidos:</span>
+                    <button type="button" onclick="renderSalesReport('today')" class="filter-btn bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300 transition">Hoje</button>
+                    <button type="button" onclick="renderSalesReport('this_month')" class="filter-btn bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300 transition">Este Mês</button>
+                    <button type="button" onclick="renderSalesReport('all')" class="filter-btn bg-gray-200 px-3 py-1 rounded-lg hover:bg-gray-300 transition active">Todas</button>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="daily-report-date">Ver por dia:</label>
+                    <input type="date" id="daily-report-date" onchange="renderSalesReport('custom_day')" class="border p-1 rounded-lg">
+                </div>
+                 <div class="flex items-center gap-2">
+                    <label for="monthly-report-date">Ver por mês:</label>
+                    <input type="month" id="monthly-report-date" onchange="renderSalesReport('custom_month')" class="border p-1 rounded-lg">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="payment-filter">Pagamento:</label>
+                    <select id="payment-filter" onchange="renderSalesReport(currentFilter)" class="border p-1 rounded-lg bg-white">
+                        <option value="">Todos</option>
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Pix">Pix</option>
+                        <option value="Cartão">Cartão (Crédito/Débito)</option>
+                        <option value="Link de Pagamento">Link de Pagamento</option>
+                    </select>
+                </div>
+                <button type="button" onclick="clearFilters()" class="text-blue-600 hover:underline text-sm ml-auto">Limpar Filtros</button>
+            </div>
+            <div id="report-summary" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <p class="text-gray-500">Valor Total no Período</p>
+                    <p id="summaryTotalValue" class="text-2xl font-bold text-gray-800">R$ 0,00</p>
+                 </div>
+                 <div class="bg-white p-6 rounded-xl shadow-md">
+                    <p class="text-gray-500">Nº de Vendas no Período</p>
+                    <p id="summaryTotalCount" class="text-2xl font-bold text-gray-800">0</p>
+                 </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md mb-6">
+                <h4 class="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Totais por Forma de Pagamento (no período)</h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                        <p class="text-gray-500"><i class="fas fa-money-bill-wave text-green-500 mr-1"></i> Dinheiro</p>
+                        <p id="summaryDinheiro" class="text-xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500">
+                            <i class="fas fa-bolt text-blue-500 mr-1"></i> Pix
+                        </p>
+                        <p id="summaryPix" class="text-xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500"><i class="fas fa-credit-card text-indigo-500 mr-1"></i> Cartão</p>
+                        <p id="summaryCartao" class="text-xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                    <div>
+                        <p class="text-gray-500"><i class="fas fa-link text-purple-500 mr-1"></i> Link Pagto.</p>
+                        <p id="summaryLink" class="text-xl font-bold text-gray-800 mt-1">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md overflow-x-auto">
+                <table class="w-full text-left min-w-[800px]">
+                    <thead>
+                        <tr class="border-b">
+                            <th scope="col" class="p-3">ID Venda</th>
+                            <th scope="col" class="p-3">Data</th>
+                            <th scope="col" class="p-3">Itens</th>
+                            <th scope="col" class="p-3">Total</th>
+                            <th scope="col" class="p-3">Pagamento</th>
+                            <th scope="col" class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesReportBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="error" class="view hidden" role="alert">
+            <div class="error-page flex flex-col items-center justify-center min-h-[300px]">
+                <h1 class="text-2xl font-bold text-red-600 mb-2">Página não encontrada</h1>
+                <p class="text-gray-700 mb-4">A página solicitada não existe.</p>
+                <a href="?page=dashboard" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-semibold">
+                    Voltar para o Dashboard
+                </a>
+            </div>
+        </div>
+        </main>
+    <div id="alertModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full transform transition-transform scale-95">
+            <div id="modalIcon" class="mb-4"></div>
+            <h3 id="modalTitle" class="text-xl font-bold text-gray-800 mb-2">Atenção</h3>
+            <p id="modalMessage" class="text-gray-600 mb-6">Mensagem do modal.</p>
+            <button type="button" onclick="closeModal('alertModal')" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">OK</button>
+        </div>
+    </div>
+
+    <div id="confirmationModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
+        <div class="bg-white p-8 rounded-xl shadow-2xl text-center max-w-sm w-full transform transition-transform scale-95">
+            <div id="confirmationModalIcon" class="mb-4"><i class="fas fa-question-circle text-5xl text-yellow-500"></i></div>
+            <h3 id="confirmationModalTitle" class="text-xl font-bold text-gray-800 mb-2">Confirmar Ação</h3>
+            <p id="confirmationModalMessage" class="text-gray-600 mb-6">Tem certeza que deseja continuar?</p>
+            <div class="flex justify-center gap-4">
+                <button type="button" onclick="closeModal('confirmationModal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                <button type="button" id="confirmActionButton" class="bg-red-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-red-700 transition-colors">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="productModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto" role="dialog" aria-modal="true">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg transform transition-transform scale-95 my-auto">
+            <h3 id="productModalTitle" class="text-2xl font-bold text-gray-800 mb-6">Cadastrar Produto</h3>
+            <form id="productForm" onsubmit="saveProduct(event)">
+                <input type="hidden" id="productId">
+                <input type="hidden" id="existingImage">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="productName" class="block mb-1 font-medium">Nome</label>
+                        <input type="text" id="productName" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="productSize" class="block mb-1 font-medium">Tamanho</label>
+                        <input type="text" id="productSize" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="productColor" class="block mb-1 font-medium">Cor</label>
+                        <input type="text" id="productColor" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                     <div>
+                        <label for="productPrice" class="block mb-1 font-medium">Preço (R$)</label>
+                        <input type="number" step="0.01" id="productPrice" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="productStock" class="block mb-1 font-medium">Estoque</label>
+                        <input type="number" id="productStock" class="w-full p-2 border rounded-lg" required>
+                    </div>
+                    <div>
+                        <label for="productImage" class="block mb-1 font-medium">Imagem do Produto</label>
+                        <input type="file" id="productImage" accept="image/*" onchange="previewImage(event)" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <label class="block mb-1 font-medium">Preview:</label>
+                    <img id="imagePreview" src="https://placehold.co/100x100/e0e0e0/777?text=Imagem" alt="Preview" class="w-24 h-24 object-cover rounded-lg border">
+                </div>
+                <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" onclick="closeModal('productModal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="saleModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4" role="dialog" aria-modal="true">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-lg transform transition-transform scale-95">
+            <h3 id="saleModalTitle" class="text-2xl font-bold text-gray-800 mb-6">Editar Venda</h3>
+            <form id="saleForm" onsubmit="saveSale(event)">
+                <input type="hidden" id="saleId">
+                <div>
+                    <label for="saleDate" class="block mb-1 font-medium">Data da Venda</label>
+                    <input type="datetime-local" id="saleDate" class="w-full p-2 border rounded-lg" required>
+                </div>
+                <p class="text-sm text-gray-500 mt-4 bg-gray-100 p-3 rounded-lg"><i class="fas fa-info-circle mr-2"></i>Apenas a data da venda pode ser alterada. Itens e pagamentos não são editáveis.</p>
+                <div class="flex justify-end gap-4 mt-8">
+                    <button type="button" onclick="closeModal('saleModal')" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar</button>
+                    <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="paymentSplitModal" class="modal-backdrop fixed inset-0 flex items-center justify-center hidden z-50 p-4 overflow-auto" role="dialog" aria-modal="true">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-xl transform transition-transform scale-95 my-auto">
+            <h3 class="text-2xl font-bold text-gray-800 mb-2">Finalizar Pagamento</h3>
+            <div class="flex justify-between items-end mb-6 border-b pb-4">
+                <div>
+                    <p class="text-gray-500">Total da Venda:</p>
+                    <p id="splitModalTotal" class="text-4xl font-bold text-blue-600">R$ 0,00</p>
+                </div>
+                <div>
+                    <p class="text-gray-500">Valor Restante:</p>
+                    <p id="splitModalRemaining" class="text-2xl font-bold text-red-500">R$ 0,00</p>
+                </div>
+            </div>
+            <div class="mb-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="paymentPartAmount" class="block mb-1 font-medium">Valor a Pagar</label>
+                        <input type="number" id="paymentPartAmount" step="0.01" class="w-full p-2 border rounded-lg" placeholder="0,00">
+                    </div>
+                    <div>
+                        <label for="paymentPartMethod" class="block mb-1 font-medium">Forma de Pagamento</label>
+                        <select id="paymentPartMethod" class="w-full p-2 border rounded-lg bg-white appearance-none h-[42px]">
+                            <option value="Dinheiro">Dinheiro</option>
+                            <option value="Pix">Pix</option>
+                            <option value="Cartão de Débito">Cartão de Débito</option>
+                            <option value="Cartão de Crédito">Cartão de Crédito</option>
+                            <option value="Link de Pagamento">Link de Pagamento</option>
+                        </select>
+                    </div>
+                    <button type="button" onclick="addPaymentPart()" class="bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition-colors self-end h-[42px]">Adicionar Pagamento</button>
+                </div>
+            </div>
+            <div class="mb-6">
+                <h4 class="font-semibold mb-2">Pagamentos Registrados:</h4>
+                <div id="paymentPartsList" class="space-y-2 max-h-32 overflow-y-auto bg-gray-50 p-3 rounded-lg">
+                    <p class="text-gray-400 text-center italic">Nenhum pagamento adicionado.</p>
+                </div>
+            </div>
+            <div class="flex justify-between gap-4 mt-8">
+                <button type="button" onclick="cancelSplitPayment()" class="bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg hover:bg-gray-400 transition-colors">Cancelar Venda</button>
+                <button type="button" id="confirmSplitSaleButton" onclick="confirmSplitSale()" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed" disabled>Confirmar Venda</button>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/main.js"></script>
+    <script>
+        // Adiciona o script de logout
+        document.getElementById('logoutButton').addEventListener('click', (e) => {
+            e.preventDefault();
+            signOut(auth).then(() => {
+                // Redireciona para o login após o logout
+                window.location.href = 'login.html';
+            }).catch((error) => {
+                console.error("Erro ao fazer logout:", error);
+                showAlert("Erro ao tentar sair. Tente novamente.", 'error');
+            });
+        });
+    </script>
+    </body>
+</html>

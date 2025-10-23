@@ -41,7 +41,8 @@
         <div class="text-2xl font-bold">
             <i class="fas fa-store text-blue-400" aria-label="Loja"></i>
         </div>
-        <nav class="flex flex-col items-center space-y-6">
+        
+        <nav class="flex flex-col items-center space-y-6 flex-1">
             <a href="?page=dashboard" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Dashboard" aria-label="Dashboard">
                 <i class="fas fa-tachometer-alt"></i>
             </a>
@@ -53,6 +54,10 @@
             </a>
             <a href="?page=reports" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700" title="Relatórios" aria-label="Relatórios">
                 <i class="fas fa-chart-line"></i>
+            </a>
+            
+            <a href="auth.php?action=logout" class="sidebar-icon p-3 rounded-lg hover:bg-gray-700 mt-auto" title="Sair" aria-label="Sair">
+                <i class="fas fa-sign-out-alt"></i>
             </a>
         </nav>
     </aside>

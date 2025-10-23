@@ -11,40 +11,147 @@ let currentFilter = 'all';
 // --- FUNÇÕES DE API ---
 
 // Busca dados da API
-async function fetchData(url) {
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return await response.json();
-    } catch (error) {
-        console.error("Falha ao buscar dados:", error);
-        showAlert(`Erro ao carregar dados da API: ${error.message}`, 'error');
-        return null;
-    }
-}
+// async function fetchData(url) {
+//     try {
+//         const response = await fetch(url);
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+//         return await response.json();
+//     } catch (error) {
+//         console.error("Falha ao buscar dados:", error);
+//         showAlert(`Erro ao carregar dados da API: ${error.message}`, 'error');
+//         return null;
+//     }
+// }
 
 // Envia dados para a API (usado para JSON)
-async function postData(url, data, method = 'POST') {
+// async function postData(url, data, method = 'POST') {
+//     try {
+//         const response = await fetch(url, {
+//             method: method,
+//             headers: { 'Content-Type': 'application/json' },
+//             body: JSON.stringify(data)
+//         });
+//         if (!response.ok) {
+//             const errorData = await response.json();
+//             throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+//         }
+//         return await response.json();
+//     } catch (error) {
+//         console.error("Falha ao enviar dados:", error);
+//         showAlert(`Erro ao salvar dados: ${error.message}`, 'error');
+//         return null;
+//     }
+// }
+
+async function renderProductList() {
+    const productList = document.getElementById('productList');
+    if (!productList) return;
+
     try {
-        const response = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+        const searchTerm = document.getElementById('productSearch').value.toLowerCase();
+        productList.innerHTML = '';
+        
+        // 1. Cria a referência para a coleção 'products'
+        const productsCol = collection(db, 'products');
+        
+        // 2. Cria a query
+        const q = query(productsCol, orderBy('name', 'asc')); // Ordena por nome
+        
+        // 3. Busca os documentos
+        const snapshot = await getDocs(q);
+        
+        let filteredProducts = [];
+        
+        // 4. Mapeia e filtra os resultados
+        snapshot.forEach(doc => {
+            const product = { id: doc.id, ...doc.data() }; // Adiciona o ID do documento
+             
+            // Simula o filtro e a checagem de estoque do backend PHP
+            if (product.stock > 0 &&
+                (product.name.toLowerCase().includes(searchTerm) || product.id.includes(searchTerm))
+            ) {
+                filteredProducts.push(product);
+            }
         });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+
+        if (filteredProducts.length === 0) {
+            productList.innerHTML = `<p class="col-span-full text-center text-gray-500">Nenhum produto encontrado.</p>`;
+            return;
         }
-        return await response.json();
+
+        filteredProducts.forEach(product => {
+            // Garante que o caminho da imagem esteja correto
+            // Se você usar o Storage do Firebase, precisará de uma URL diferente.
+            // Para URLs fixas ou placehold, esta lógica permanece.
+            const imageUrl = product.image || 'https://placehold.co/300x300/e0e0e0/777?text=Produto';
+            
+            // O código HTML de renderização permanece o mesmo
+            productList.innerHTML += `
+                <div onclick='addToCart(${JSON.stringify(product)})' class="border rounded-lg p-3 text-center cursor-pointer hover:shadow-lg hover:border-blue-500 transition-all">
+                    <img src="${imageUrl}" alt="${product.name}" class="w-full h-24 object-cover rounded-md mb-2">
+                    <p class="font-semibold text-sm text-gray-700">${product.name}</p>
+                    <p class="text-xs text-gray-500">${product.size} / ${product.color}</p>
+                    <p class="font-bold text-blue-600 mt-1">R$ ${parseFloat(product.price).toFixed(2).replace('.', ',')}</p>
+                </div>
+            `;
+        });
     } catch (error) {
-        console.error("Falha ao enviar dados:", error);
-        showAlert(`Erro ao salvar dados: ${error.message}`, 'error');
-        return null;
+        console.error("Erro ao carregar produtos:", error);
+        showAlert(`Erro ao carregar produtos: ${error.message}`, 'error');
     }
 }
 
+async function saveProduct(event) {
+    event.preventDefault();
+    
+    // ... (código de upload de imagem removido/adaptado, mas a lógica de FormData NÃO é mais necessária para o Firestore)
+
+    const id = document.getElementById('productId').value;
+    const name = document.getElementById('productName').value;
+    const size = document.getElementById('productSize').value;
+    const color = document.getElementById('productColor').value;
+    const price = parseFloat(document.getElementById('productPrice').value);
+    const stock = parseInt(document.getElementById('productStock').value);
+    
+    // Mantendo a lógica da imagem por enquanto, assumindo que `imagePath` é uma URL (ex: placeholder)
+    let imagePath = document.getElementById('existingImage').value;
+
+    const productData = {
+        name: name,
+        size: size,
+        color: color,
+        price: price,
+        stock: stock,
+        image: imagePath || null // Adicione aqui a URL do Firebase Storage se implementado
+    };
+    
+    try {
+        if (id) {
+            // Edição (UPDATE)
+            const productRef = doc(db, 'products', id);
+            await updateDoc(productRef, productData);
+            showAlert('Produto atualizado com sucesso!', 'success');
+        } else {
+            // Cadastro (INSERT)
+            const productsCol = collection(db, 'products');
+            await addDoc(productsCol, productData);
+            showAlert('Produto cadastrado com sucesso!', 'success');
+        }
+
+        closeModal('productModal');
+        renderProductTable();
+        const pdvView = document.getElementById('pdv');
+        if(pdvView && pdvView.classList.contains('hidden') === false) {
+           renderProductList();
+        }
+
+    } catch (error) {
+        console.error("Falha ao salvar produto:", error);
+        showAlert(`Erro ao salvar produto: ${error.message}`, 'error');
+    }
+}
 
 // --- NAVEGAÇÃO E EXIBIÇÃO ---
 
